@@ -197,29 +197,46 @@ export default function DietPlan({ user }) {
 }
 
 const tabStyle = {
-  padding: '0.6rem 1.25rem',
+  padding: '0.6rem 1.4rem',
   borderRadius: '0.75rem',
   border: 'none',
   background: 'transparent',
   color: 'var(--text-secondary)',
   cursor: 'pointer',
-  fontWeight: '600',
+  fontWeight: '700',
+  fontSize: '0.9rem',
   transition: 'all 0.3s ease'
 };
 
 const activeTabStyle = {
   ...tabStyle,
-  background: 'var(--bg-color)',
-  color: 'var(--primary-color)',
-  boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+  background: 'rgba(45, 212, 191, 0.15)',
+  color: '#2dd4bf',
+  boxShadow: '0 4px 12px rgba(45, 212, 191, 0.1)'
 };
 
 const WeeklyMeal = ({ slot, suggestion, icon }) => (
-  <div style={{ padding: '1.25rem', background: 'var(--secondary-color)', borderRadius: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center', transition: 'transform 0.2s' }}>
-    <div style={{ fontSize: '1.5rem' }}>{icon}</div>
+  <div style={{ 
+    padding: '1rem 1.25rem', 
+    background: 'rgba(255,255,255,0.04)', 
+    borderRadius: '1rem', 
+    display: 'flex', 
+    gap: '1rem', 
+    alignItems: 'center', 
+    transition: 'all 0.2s ease',
+    border: '1px solid rgba(255,255,255,0.06)'
+  }}>
+    <div style={{ 
+      fontSize: '1.3rem',
+      width: '42px', height: '42px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(45, 212, 191, 0.1)',
+      borderRadius: '0.75rem',
+      flexShrink: 0
+    }}>{icon}</div>
     <div>
-      <div style={{ fontWeight: '800', color: 'var(--text-secondary)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{slot}</div>
-      <div style={{ lineHeight: '1.4', fontSize: '1rem', fontWeight: '500' }}>{suggestion}</div>
+      <div style={{ fontWeight: '800', color: '#2dd4bf', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '0.15rem' }}>{slot}</div>
+      <div style={{ lineHeight: '1.4', fontSize: '0.9rem', fontWeight: '500', color: 'var(--text-primary)' }}>{suggestion}</div>
     </div>
   </div>
 );
@@ -240,32 +257,87 @@ const MacroBar = ({ label, value, unit, max, color }) => {
   );
 };
 
-const MealCard = ({ name, data, icon, time }) => (
-  <div className="glass-panel" style={{ 
-    display: 'flex', gap: '1.5rem', padding: '1.5rem', borderRadius: '1.5rem', alignItems: 'center',
-    background: 'white', border: '1px solid rgba(0,0,0,0.03)'
-  }}>
-    <div style={{ 
-      fontSize: '2.5rem', background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', 
-      width: '80px', height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
-      borderRadius: '1.5rem', boxShadow: '0 8px 15px rgba(34, 197, 94, 0.1)' 
-    }}>
-      {icon}
-    </div>
-    <div style={{ flex: 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <div>
-          <h3 style={{ fontSize: '1.2rem', margin: '0 0 0.1rem 0', fontWeight: '700' }}>{name}</h3>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: '600' }}>{time}</span>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ color: '#15803d', fontWeight: '800', fontSize: '1.1rem' }}>{data.calories}</div>
-          <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: '700', textTransform: 'uppercase' }}>KCAL</div>
+const MEAL_COLORS = {
+  'Breakfast': { accent: '#f06868', bg: 'rgba(240, 104, 104, 0.08)', border: 'rgba(240, 104, 104, 0.2)' },
+  'Lunch':     { accent: '#2bae9e', bg: 'rgba(43, 174, 158, 0.08)',  border: 'rgba(43, 174, 158, 0.2)' },
+  'Evening Snack': { accent: '#6b7d93', bg: 'rgba(107, 125, 147, 0.08)', border: 'rgba(107, 125, 147, 0.2)' },
+  'Dinner':    { accent: '#e8845a', bg: 'rgba(232, 132, 90, 0.08)',  border: 'rgba(232, 132, 90, 0.2)' },
+};
+
+const MealCard = ({ name, data, icon, time }) => {
+  const colors = MEAL_COLORS[name] || MEAL_COLORS['Lunch'];
+  return (
+    <div style={{
+      display: 'flex',
+      gap: '1.5rem',
+      alignItems: 'stretch',
+      background: 'var(--card-bg)',
+      borderRadius: '1.5rem',
+      overflow: 'hidden',
+      boxShadow: 'var(--shadow)',
+      border: 'var(--glass-border)',
+      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+    }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+    >
+      {/* Color-coded left strip */}
+      <div style={{
+        width: '6px',
+        background: colors.accent,
+        flexShrink: 0,
+        borderRadius: '0 0 0 0',
+      }} />
+
+      {/* Icon block */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '80px',
+        flexShrink: 0,
+      }}>
+        <div style={{
+          fontSize: '2.2rem',
+          background: colors.bg,
+          border: `1.5px solid ${colors.border}`,
+          width: '64px', height: '64px',
+          borderRadius: '1.25rem',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {icon}
         </div>
       </div>
-      <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '1rem', lineHeight: '1.5' }}>
-        <strong style={{ color: 'var(--text-primary)' }}>Recommendation:</strong> {data.suggestion}
-      </p>
+
+      {/* Content */}
+      <div style={{ flex: 1, padding: '1.4rem 1.4rem 1.4rem 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.6rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <h3 style={{ fontSize: '1.15rem', margin: 0, fontWeight: '800', color: 'var(--text-primary)' }}>{name}</h3>
+              <span style={{
+                fontSize: '0.72rem', fontWeight: '700', color: colors.accent,
+                background: colors.bg, border: `1px solid ${colors.border}`,
+                padding: '0.15rem 0.6rem', borderRadius: '2rem', letterSpacing: '0.5px'
+              }}>{time}</span>
+            </div>
+          </div>
+          {/* Calorie badge */}
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: '900', color: colors.accent, lineHeight: 1 }}>
+              {data.calories}
+            </div>
+            <div style={{ fontSize: '0.6rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)' }}>
+              kcal
+            </div>
+          </div>
+        </div>
+        <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.92rem', lineHeight: '1.6' }}>
+          {data.suggestion}
+        </p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+

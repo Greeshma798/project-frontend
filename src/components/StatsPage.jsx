@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import DietCharts from './DietCharts';
 
-const API_BASE = 'http://localhost:8081/api';
+const API_BASE = 'http://localhost:8082/api';
 
 export default function StatsPage({ user }) {
   const [analysis, setAnalysis] = useState(null);

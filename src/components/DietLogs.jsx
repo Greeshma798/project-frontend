@@ -162,26 +162,33 @@ export default function DietLogs({ user }) {
       </header>
 
       <div className="glass-panel" style={{ marginBottom: '2rem' }}>
-        <h2>Quick add common items</h2>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <h2 style={{ marginBottom: '1rem' }}>⚡ Quick Add</h2>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
           {quickItems.map((item, idx) => (
             <button 
               key={idx} 
               onClick={() => handleQuickAdd(item)}
-              className="chip-btn"
               style={{ 
                 width: 'auto', 
-                background: 'var(--secondary-color)', 
-                padding: '0.5rem 1rem', 
+                background: 'var(--secondary-color)',
+                padding: '0.45rem 1.1rem', 
                 borderRadius: '2rem', 
-                fontSize: '0.9rem',
-                border: '1px solid var(--border-color)',
+                fontSize: '0.88rem',
+                fontWeight: '700',
+                border: '1.5px solid var(--border-color)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem'
+                gap: '0.4rem',
+                cursor: 'pointer',
+                color: 'var(--text-primary)',
+                transition: 'all 0.2s ease',
+                fontFamily: 'inherit'
               }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary-color)'; e.currentTarget.style.color = 'var(--primary-color)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
             >
-              <span>+</span> {item.name}
+              <span style={{ fontWeight: '900' }}>+</span> {item.name}
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.2rem' }}>{item.cal} kcal</span>
             </button>
           ))}
         </div>
@@ -290,43 +297,133 @@ export default function DietLogs({ user }) {
               <p>No meals recorded yet.</p>
             </div>
           ) : (
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Food Name</th>
-                    <th>Calories</th>
-                    <th>P / C / F (g)</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedRecords.map((record) => (
-                    <tr key={record.id}>
-                      <td>{new Date(record.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                      <td style={{ fontWeight: 500 }}>{record.foodName}</td>
-                      <td style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{record.calories}</td>
-                      <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                        <div>{record.protein || 0} / {record.carbohydrates || 0} / {record.fat || 0} <span style={{fontSize: '0.7rem'}}>(g)</span></div>
-                        {(record.vitaminA || record.vitaminC || record.vitaminD) ? (
-                          <div style={{ fontSize: '0.75rem', marginTop: '0.4rem', opacity: 0.8 }}>
-                            Vit: {record.vitaminA || 0} / {record.vitaminC || 0} / {record.vitaminD || 0}
-                          </div>
-                        ) : null}
-                      </td>
-                      <td className="action-btns">
-                        <button type="button" className="icon-btn" onClick={() => editRecord(record)} title="Edit">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', 
+              gap: '1.25rem',
+              marginTop: '1.5rem'
+            }}>
+              {sortedRecords.map((record) => {
+                const getFoodEmoji = (name) => {
+                  const l = name.toLowerCase();
+                  if (l.includes('idli')) return '🥣';
+                  if (l.includes('dosa')) return '🥞';
+                  if (l.includes('rice') || l.includes('thali') || l.includes('meals')) return '🍛';
+                  if (l.includes('biryani') || l.includes('chicken') || l.includes('mutton')) return '🍗';
+                  if (l.includes('vada') || l.includes('samosa') || l.includes('snack')) return '🍩';
+                  if (l.includes('salad') || l.includes('veggie') || l.includes('vegetable')) return '🥗';
+                  if (l.includes('egg')) return '🥚';
+                  if (l.includes('fruit') || l.includes('apple') || l.includes('banana')) return '🍎';
+                  if (l.includes('milk') || l.includes('curd') || l.includes('yogurt')) return '🥛';
+                  if (l.includes('fish') || l.includes('prawn') || l.includes('seafood')) return '🐟';
+                  if (l.includes('bread') || l.includes('roti') || l.includes('chapati')) return '🫓';
+                  if (l.includes('soup')) return '🍜';
+                  if (l.includes('nut') || l.includes('almond') || l.includes('cashew')) return '🌰';
+                  return '🍽️';
+                };
+
+                const calColor = record.calories > 600 ? '#e85d6a' : record.calories > 300 ? 'var(--accent-color)' : 'var(--success-color)';
+
+                return (
+                  <div key={record.id} style={{
+                    background: 'var(--card-bg)',
+                    borderRadius: '1.35rem',
+                    border: 'var(--glass-border)',
+                    boxShadow: 'var(--shadow)',
+                    overflow: 'hidden',
+                    transition: 'all 0.25s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 14px 30px rgba(0,0,0,0.1)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--shadow)'; }}
+                  >
+                    {/* Top colored strip + emoji */}
+                    <div style={{
+                      background: `linear-gradient(135deg, var(--secondary-color), var(--bg-color))`,
+                      padding: '1.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1rem',
+                      borderBottom: '1.5px dashed var(--border-color)'
+                    }}>
+                      <div style={{
+                        fontSize: '2rem',
+                        width: '52px', height: '52px',
+                        background: 'var(--card-bg)',
+                        border: 'var(--glass-border)',
+                        borderRadius: '1rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                        flexShrink: 0
+                      }}>
+                        {getFoodEmoji(record.foodName)}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          {new Date(record.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </div>
+                        <div style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-primary)', marginTop: '0.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {record.foodName}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Macro pills */}
+                    <div style={{ padding: '1rem 1.25rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {[['P', record.protein || 0, '#f06868'], ['C', record.carbohydrates || 0, '#2bae9e'], ['F', record.fat || 0, '#e8845a']].map(([label, val, color]) => (
+                        <span key={label} style={{
+                          fontSize: '0.75rem', fontWeight: '700',
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: '2rem',
+                          background: `${color}18`,
+                          border: `1px solid ${color}35`,
+                          color: color
+                        }}>
+                          {label}: {val}g
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Footer: calories + actions */}
+                    <div style={{
+                      marginTop: 'auto',
+                      padding: '0.85rem 1.25rem',
+                      borderTop: '1.5px dashed var(--border-color)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <span style={{ fontSize: '1.5rem', fontWeight: '900', color: calColor, lineHeight: 1 }}>
+                          {record.calories}
+                        </span>
+                        <span style={{ fontSize: '0.65rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--text-secondary)', marginLeft: '0.3rem' }}>kcal</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button type="button" onClick={() => editRecord(record)} title="Edit" style={{
+                          width: 'auto', background: 'var(--secondary-color)', border: '1.5px solid var(--border-color)',
+                          padding: '0.4rem 0.6rem', borderRadius: '0.65rem', cursor: 'pointer', transition: 'all 0.2s'
+                        }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary-color)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                         </button>
-                        <button type="button" className="icon-btn delete" onClick={() => handleDelete(record.id)} title="Delete">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        <button type="button" onClick={() => handleDelete(record.id)} title="Delete" style={{
+                          width: 'auto', background: 'rgba(232,93,106,0.08)', border: '1.5px solid rgba(232,93,106,0.25)',
+                          padding: '0.4rem 0.6rem', borderRadius: '0.65rem', cursor: 'pointer', transition: 'all 0.2s'
+                        }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(232,93,106,0.15)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(232,93,106,0.08)'; }}
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--danger-color)" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>

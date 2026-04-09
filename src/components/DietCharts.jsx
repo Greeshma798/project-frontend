@@ -30,7 +30,7 @@ export default function DietCharts({ user }) {
     getDietRecords(user.id).then(res => setRecords(res.data));
   }, [user]);
 
-  // Aggregate macros for today
+ 
   const today = new Date().toISOString().split('T')[0];
   const todayRecords = records.filter(r => r.date === today);
 
@@ -49,7 +49,7 @@ export default function DietCharts({ user }) {
     }]
   };
 
-  // Last 7 days calories
+
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -84,7 +84,7 @@ export default function DietCharts({ user }) {
     labels: ['Vit A', 'Vit C', 'Vit D', 'Iron', 'Calcium'],
     datasets: [{
       label: 'Today\'s Intake (%)',
-      // Simplified target comparison for visualization
+      
       data: [
         (micronutrients.vitaminA / 800) * 100, 
         (micronutrients.vitaminC / 80) * 100, 
