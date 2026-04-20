@@ -8,6 +8,7 @@ import WaterPage from './components/WaterPage';
 import StatsPage from './components/StatsPage';
 import Dashboard from './components/Dashboard'; 
 import AdminDashboard from './components/AdminDashboard';
+import NutritionistDashboard from './components/NutritionistDashboard';
 import './App.css';
 import './index.css';
 
@@ -43,9 +44,12 @@ function App() {
     localStorage.removeItem('diet_user');
   };
 
+  const isAdmin = user?.role === 'ADMIN';
+  const isNutritionist = user?.role === 'NUTRITIONIST';
+
   return (
     <>
-      {user?.role === 'ADMIN' && (
+      {isAdmin && (
         <div style={{ 
           background: 'linear-gradient(to right, #ef4444, #f59e0b)', 
           color: 'white', 
@@ -62,6 +66,23 @@ function App() {
           🛡️ Administrator Mode - Restricted Access
         </div>
       )}
+      {isNutritionist && (
+        <div style={{ 
+          background: 'linear-gradient(to right, #3b82f6, #10b981)', 
+          color: 'white', 
+          textAlign: 'center', 
+          padding: '0.4rem', 
+          fontSize: '0.8rem', 
+          fontWeight: '700', 
+          letterSpacing: '1px',
+          textTransform: 'uppercase',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000
+        }}>
+          👨‍⚕️ Nutritionist & Doctor Mode - Professional Portal
+        </div>
+      )}
       <div className="background-accents">
         <div className="accent-blob blob-1"></div>
         <div className="accent-blob blob-2"></div>
@@ -70,23 +91,29 @@ function App() {
 
       <nav className="navbar">
         <div className="logo" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)', padding: '6px', borderRadius: '8px', display: 'flex' }}>
+          <div style={{ background: `linear-gradient(135deg, ${isAdmin ? '#ef4444' : '#10b981'}, #3b82f6)`, padding: '6px', borderRadius: '8px', display: 'flex' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
               <path d="M2 21L5 18"></path>
             </svg>
           </div>
           <span style={{ background: 'linear-gradient(to right, var(--primary-color), #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: '800' }}>
-            NutriTrack {user?.role === 'ADMIN' && <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>(Admin)</span>}
+            NutriTrack {isAdmin && <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>(Admin)</span>}
+            {isNutritionist && <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>(Expert)</span>}
           </span>
         </div>
 
         {user && (
           <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-            {user.role === 'ADMIN' ? (
+            {isAdmin ? (
               <>
                 <Link to="/admin" style={linkStyle(location.pathname === '/admin', 'ADMIN')}>Admin Console</Link>
                 <Link to="/stats" style={linkStyle(location.pathname === '/stats', 'ADMIN')}>System Stats</Link>
+              </>
+            ) : isNutritionist ? (
+              <>
+                <Link to="/nutritionist" style={linkStyle(location.pathname === '/nutritionist', 'NUTRITIONIST')}>Patient Portal</Link>
+                <Link to="/stats" style={linkStyle(location.pathname === '/stats', 'NUTRITIONIST')}>Analytics</Link>
               </>
             ) : (
               <>
@@ -129,23 +156,26 @@ function App() {
         </div>
       </nav>
 
-      <main className="dashboard" style={user?.role === 'ADMIN' ? { maxWidth: '1400px' } : {}}>
+      <main className="dashboard" style={(isAdmin || isNutritionist) ? { maxWidth: '1400px' } : {}}>
         {user ? (
           <Routes>
-            <Route path="/" element={user.role === 'ADMIN' ? <Navigate to="/admin" replace /> : <DietLogs user={user} />} />
+            <Route path="/" element={(isAdmin) ? <Navigate to="/admin" replace /> : (isNutritionist ? <Navigate to="/nutritionist" replace /> : <DietLogs user={user} />)} />
             <Route path="/dashboard" element={<Dashboard user={user} />} />
             <Route path="/plan" element={<DietPlan user={user} />} />
             <Route path="/water" element={<WaterPage user={user} />} />
             <Route path="/stats" element={<StatsPage user={user} />} />
             <Route path="/routine" element={<RoutineBuilder user={user} />} />
             
-            {/* Admin Only Route */}
             <Route 
               path="/admin" 
-              element={user.role === 'ADMIN' ? <AdminDashboard /> : <Navigate to="/" replace />} 
+              element={isAdmin ? <AdminDashboard /> : <Navigate to="/" replace />} 
+            />
+            <Route 
+              path="/nutritionist" 
+              element={isNutritionist ? <NutritionistDashboard nutritionist={user} /> : <Navigate to="/" replace />} 
             />
             
-            <Route path="*" element={<Navigate to={user.role === 'ADMIN' ? "/admin" : "/"} replace />} />
+            <Route path="*" element={<Navigate to={isAdmin ? "/admin" : (isNutritionist ? "/nutritionist" : "/")} replace />} />
           </Routes>
         ) : (
           <Routes>

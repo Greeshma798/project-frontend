@@ -1,32 +1,39 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUser, registerUser } from '../services/api';
+import { loginUser, registerUser, getCaptcha } from '../services/api';
 import { useEffect } from 'react';
+
 export default function AuthPage({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true);
-  const [loginRole, setLoginRole] = useState('USER'); // 'USER' or 'ADMIN'
   const [formData, setFormData] = useState({ email: '', password: '', adminCode: '' });
   const [error, setError] = useState('');
-  const [captcha, setCaptcha] = useState({ question: '', answer: 0 });
+  const [captcha, setCaptcha] = useState({ id: '', text: '' });
   const [userAnswer, setUserAnswer] = useState('');
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    generateCaptcha();
-  }, [isLogin, loginRole]);
+    loadCaptcha();
+  }, [isLogin]);
 
-  const generateCaptcha = () => {
-    const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
+  const loadCaptcha = async () => {
+    setCaptcha({ id: '', text: 'Loading...' });
+    try {
+      const res = await getCaptcha();
+      if (res.data && res.data.captchaText) {
+        setCaptcha({
+          id: res.data.captchaId,
+          text: res.data.captchaText
+        });
+      } else {
+        setError('Unexpected captcha response from server.');
+      }
+      setUserAnswer('');
+    } catch (err) {
+      console.error("Captcha fetch error:", err);
+      setError('Connection Error: Network Error');
+      setCaptcha({ id: '', text: 'ERROR' });
     }
-    setCaptcha({ 
-      question: result, 
-      answer: result 
-    });
-    setUserAnswer('');
   };
 
   const handleChange = (e) => {
@@ -37,44 +44,54 @@ export default function AuthPage({ onLogin }) {
     e.preventDefault();
     setError('');
 
-    if (isLogin && userAnswer !== captcha.answer) {
-      setError('Incorrect captcha. Please try again.');
-      generateCaptcha();
-      return;
-    }
-
     try {
       if (isLogin) {
-        const res = await loginUser(formData);
+        // Send captcha details along with login
+        const res = await loginUser({
+          email: formData.email,
+          password: formData.password,
+          captchaId: captcha.id,
+          captchaAnswer: userAnswer
+        });
         const userData = res.data;
         
-        // Verify role match if intended
-        if (loginRole === 'ADMIN' && userData.role !== 'ADMIN') {
-          setError('This account does not have administrator privileges.');
-          return;
-        }
-
         onLogin(userData);
-        navigate(userData.role === 'ADMIN' ? '/admin' : '/');
+        if (userData.role === 'ADMIN') navigate('/admin');
+        else if (userData.role === 'NUTRITIONIST') navigate('/nutritionist');
+        else navigate('/');
       } else {
         if (!formData.email.endsWith('@gmail.com')) {
           setError('Only @gmail.com emails are accepted.');
           return;
         }
 
-        const role = formData.adminCode === 'admin123' ? 'ADMIN' : 'USER';
+        let selectedRole = formData.role || 'USER';
+        
+        // Validate codes for special roles
+        if (selectedRole === 'ADMIN' && formData.adminCode !== 'admin123') {
+          setError('Invalid Admin Access Code.');
+          return;
+        }
+        if (selectedRole === 'NUTRITIONIST' && formData.adminCode !== 'nutri123') {
+          setError('Invalid Nutritionist Access Code.');
+          return;
+        }
         
         const res = await registerUser({ 
           email: formData.email, 
           password: formData.password, 
           username: formData.email.split('@')[0],
-          role: role 
+          role: selectedRole 
         });
         onLogin(res.data);
-        navigate(role === 'ADMIN' ? '/admin' : '/');
+        if (selectedRole === 'ADMIN') navigate('/admin');
+        else if (selectedRole === 'NUTRITIONIST') navigate('/nutritionist');
+        else navigate('/');
       }
     } catch (err) {
       console.error("Auth Error:", err);
+      if (isLogin) loadCaptcha(); // Refresh captcha on failure
+
       if (err.response && err.response.data) {
         const backendMessage = typeof err.response.data === 'string'
           ? err.response.data
@@ -90,31 +107,12 @@ export default function AuthPage({ onLogin }) {
     <div className="auth-container glass-panel" style={{ maxWidth: '420px', margin: '4rem auto', padding: '3rem 2rem' }}>
       <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
         <h2 style={{ fontSize: '2rem' }}>
-          {isLogin ? 'NutriTrack Login' : 'Register'}
+          {isLogin ? 'NutriTrack Login' : 'Create Account'}
         </h2>
         <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
           {isLogin ? 'Enter your credentials to access your dashboard.' : 'Start your health journey today.'}
         </p>
       </div>
-
-      {isLogin && (
-        <div className="role-switcher" style={{ display: 'flex', background: 'var(--secondary-color)', padding: '0.4rem', borderRadius: '1rem', marginBottom: '2rem' }}>
-          <button 
-            type="button"
-            onClick={() => setLoginRole('USER')} 
-            style={loginRole === 'USER' ? activeRoleTab : roleTab}
-          >
-            User Login
-          </button>
-          <button 
-            type="button"
-            onClick={() => setLoginRole('ADMIN')} 
-            style={loginRole === 'ADMIN' ? activeRoleTab : roleTab}
-          >
-            Admin Portal
-          </button>
-        </div>
-      )}
 
       {error && <div style={{ 
         color: 'var(--danger-color)', 
@@ -154,9 +152,35 @@ export default function AuthPage({ onLogin }) {
           />
         </div>
 
+        {!isLogin && (
+          <div className="form-group">
+            <label htmlFor="role">Register As</label>
+            <select 
+              id="role"
+              name="role"
+              value={formData.role || 'USER'}
+              onChange={handleChange}
+              style={{ width: '100%', padding: '0.75rem', borderRadius: '0.75rem', background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
+            >
+              <option value="USER">Standard User</option>
+              <option value="NUTRITIONIST">Nutritionist / Doctor</option>
+              <option value="ADMIN">System Administrator</option>
+            </select>
+          </div>
+        )}
+
         {isLogin && (
           <div className="form-group">
-            <label>Human Verification (Captcha)</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem' }}>
+              <label style={{ margin: 0 }}>Human Verification</label>
+              <button 
+                type="button" 
+                onClick={loadCaptcha} 
+                style={{ width: 'auto', background: 'none', color: 'var(--primary-color)', fontSize: '0.75rem', padding: 0 }}
+              >
+                ↻ Refresh
+              </button>
+            </div>
             <div style={{ 
               background: 'var(--bg-color)', 
               padding: '1rem', 
@@ -172,11 +196,11 @@ export default function AuthPage({ onLogin }) {
               border: '1px solid var(--border-color)',
               boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
             }}>
-              {captcha.question}
+              {captcha.text}
             </div>
             <input 
               type="text" 
-              placeholder="Enter characters exactly as shown" 
+              placeholder="Enter text above" 
               value={userAnswer} 
               onChange={(e) => setUserAnswer(e.target.value)} 
               required 
@@ -184,24 +208,23 @@ export default function AuthPage({ onLogin }) {
           </div>
         )}
 
-        {!isLogin && (
+        {!isLogin && (formData.role === 'ADMIN' || formData.role === 'NUTRITIONIST') && (
           <div className="form-group">
-            <label htmlFor="adminCode">Admin Access Code (Optional)</label>
+            <label htmlFor="adminCode">Access Code</label>
             <input
-              type="text"
+              type="password"
               id="adminCode"
               name="adminCode"
               value={formData.adminCode}
               onChange={handleChange}
-              placeholder="Enter code for Admin privileges"
-              style={{ border: formData.adminCode === 'admin123' ? '2px solid var(--success-color)' : '1px solid var(--border-color)' }}
+              placeholder={formData.role === 'ADMIN' ? "Admin Code (admin123)" : "Nutritionist Code (nutri123)"}
+              required
             />
-            {formData.adminCode === 'admin123' && <small style={{ color: 'var(--success-color)', fontWeight: '600' }}>✓ Valid Admin Code</small>}
           </div>
         )}
 
-        <button type="submit" className="btn-primary" style={{ height: '3.5rem', fontSize: '1.1rem', fontWeight: 'bold' }}>
-          {isLogin ? `Access ${loginRole === 'ADMIN' ? 'Console' : 'Dashboard'}` : `Register as ${formData.adminCode === 'admin123' ? 'Admin' : 'User'}`}
+        <button type="submit" className="btn-primary" style={{ height: '3.5rem', fontSize: '1.1rem', fontWeight: 'bold', marginTop: '1rem' }}>
+          {isLogin ? `Log In` : `Sign Up`}
         </button>
       </form>
 
@@ -212,7 +235,6 @@ export default function AuthPage({ onLogin }) {
             type="button"
             onClick={() => {
               setIsLogin(!isLogin);
-              setLoginRole('USER');
             }}
             style={{
               background: 'none',
@@ -233,23 +255,3 @@ export default function AuthPage({ onLogin }) {
     </div>
   );
 }
-
-const roleTab = {
-  flex: 1,
-  padding: '0.6rem',
-  borderRadius: '0.75rem',
-  border: 'none',
-  background: 'transparent',
-  color: 'var(--text-secondary)',
-  cursor: 'pointer',
-  fontSize: '0.9rem',
-  fontWeight: '600',
-  transition: 'all 0.3s ease'
-};
-
-const activeRoleTab = {
-  ...roleTab,
-  background: 'var(--bg-color)',
-  color: 'var(--primary-color)',
-  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-};

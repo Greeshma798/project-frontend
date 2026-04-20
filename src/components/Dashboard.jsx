@@ -14,6 +14,9 @@ export default function Dashboard({ user }) {
   });
   const [isSettingUsername, setIsSettingUsername] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+  const [meds, setMeds] = useState([]);
+  const [showMedForm, setShowMedForm] = useState(false);
+  const [newMed, setNewMed] = useState({ name: '', dosage: '', frequency: '' });
 
   useEffect(() => {
     if (user && user.id) {
@@ -35,8 +38,33 @@ export default function Dashboard({ user }) {
       }).catch(err => console.error("Failed to load profile", err));
       
       fetchAnalysis();
+      fetchMeds();
     }
   }, [user]);
+
+  const fetchMeds = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/medications/user/${user.id}`);
+      setMeds(res.data);
+    } catch (err) {
+      console.error("Med fetch error", err);
+    }
+  };
+
+  const handleAddMed = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post(`${API_BASE}/medications`, {
+        ...newMed,
+        user: { id: user.id }
+      });
+      setNewMed({ name: '', dosage: '', frequency: '' });
+      setShowMedForm(false);
+      fetchMeds();
+    } catch (err) {
+      console.error("Add med error", err);
+    }
+  };
 
   const fetchAnalysis = async () => {
     try {
@@ -223,11 +251,53 @@ export default function Dashboard({ user }) {
 
       <div style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
         <WaterTracker user={user} />
-        {/* Placeholder for future features or additional stats */}
-        <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
-          <h3 style={{ marginBottom: '1rem' }}>Daily Routine</h3>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>Organize your day for better results.</p>
-          <a href="/routine" className="btn-primary" style={{ textDecoration: 'none', width: 'auto' }}>Manage Schedule</a>
+        
+        {/* Medication Panel for User */}
+        <div className="glass-panel">
+          <h3 style={{ marginBottom: '1rem' }}>💊 My Medications</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+            Tracking your meds helps our experts provide better advice.
+          </p>
+          
+          <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '1rem' }}>
+            {meds.length > 0 ? (
+              meds.map(m => (
+                <div key={m.id} style={{ padding: '0.8rem', background: 'var(--secondary-color)', borderRadius: '0.75rem', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                  <strong>{m.name}</strong> - {m.dosage} ({m.frequency})
+                </div>
+              ))
+            ) : (
+              <p style={{ fontSize: '0.85rem', opacity: 0.6, textAlign: 'center' }}>No medications logged.</p>
+            )}
+          </div>
+
+          {!showMedForm ? (
+            <button className="btn-secondary" style={{ width: '100%', fontSize: '0.85rem' }} onClick={() => setShowMedForm(true)}>
+              + Add Medication
+            </button>
+          ) : (
+            <form onSubmit={handleAddMed} style={{ background: 'var(--bg-color)', padding: '1rem', borderRadius: '1rem', border: '1px solid var(--border-color)' }}>
+              <input 
+                type="text" placeholder="Name (e.g. Vitamin D)" 
+                required value={newMed.name} onChange={e => setNewMed({...newMed, name: e.target.value})}
+                style={{ marginBottom: '0.5rem', padding: '0.5rem', width: '100%' }}
+              />
+              <input 
+                type="text" placeholder="Dosage (e.g. 500mg)" 
+                required value={newMed.dosage} onChange={e => setNewMed({...newMed, dosage: e.target.value})}
+                style={{ marginBottom: '0.5rem', padding: '0.5rem', width: '100%' }}
+              />
+               <input 
+                type="text" placeholder="Frequency (e.g. Once daily)" 
+                required value={newMed.frequency} onChange={e => setNewMed({...newMed, frequency: e.target.value})}
+                style={{ marginBottom: '1rem', padding: '0.5rem', width: '100%' }}
+              />
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button type="submit" className="btn-primary" style={{ flex: 1, fontSize: '0.8rem', height: '2.5rem' }}>Save</button>
+                <button type="button" className="btn-secondary" style={{ flex: 1, fontSize: '0.8rem', height: '2.5rem' }} onClick={() => setShowMedForm(false)}>Cancel</button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

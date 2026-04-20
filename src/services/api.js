@@ -5,6 +5,7 @@ const API = axios.create({ baseURL: 'http://localhost:8082/api' });
 
 export const registerUser = (data) => API.post('/auth/register', data);
 export const loginUser = (data) => API.post('/auth/login', data);
+export const getCaptcha = () => API.get('/auth/captcha');
 
 
 export const getUser = (id) => API.get(`/users/${id}`);

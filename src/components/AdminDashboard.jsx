@@ -6,6 +6,7 @@ const API_BASE = 'http://localhost:8082/api';
 export default function AdminDashboard() {
   const [standards, setStandards] = useState([]);
   const [usersSummary, setUsersSummary] = useState([]);
+  const [medications, setMedications] = useState([]);
   const [newStandard, setNewStandard] = useState({
     nutrientName: '', ageRange: '', gender: 'BOTH', targetValue: '', unit: ''
   });
@@ -13,6 +14,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     fetchStandards();
     fetchUsersHealth();
+    fetchMedications();
   }, []);
 
   const fetchStandards = async () => {
@@ -23,6 +25,15 @@ export default function AdminDashboard() {
   const fetchUsersHealth = async () => {
     const res = await axios.get(`${API_BASE}/admin/users-health`);
     setUsersSummary(res.data);
+  };
+
+  const fetchMedications = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/admin/medications`);
+      setMedications(res.data);
+    } catch (err) {
+      console.error("Error fetching medications", err);
+    }
   };
 
   const handleCreateStandard = async (e) => {
@@ -41,7 +52,7 @@ export default function AdminDashboard() {
     <div className="admin-dashboard">
       <h1 style={{ marginBottom: '2.5rem' }}>Administrator Console</h1>
 
-      <div className="grid-container" style={{ gridTemplateColumns: 'minmax(400px, 1fr) 2fr' }}>
+      <div className="grid-container" style={{ gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         {/* Manage RDA Standards */}
         <div className="glass-panel">
           <h2>Manage Nutritional Standards (RDA)</h2>
@@ -105,7 +116,7 @@ export default function AdminDashboard() {
             <button type="submit" className="btn-primary">Add Standard</button>
           </form>
 
-          <div className="table-container">
+          <div className="table-container" style={{ maxHeight: '300px', overflowY: 'auto' }}>
             <table>
               <thead>
                 <tr>
@@ -139,6 +150,7 @@ export default function AdminDashboard() {
               <thead>
                 <tr>
                   <th>User</th>
+                  <th>Role</th>
                   <th>Age</th>
                   <th>Metrics (W/H)</th>
                   <th>Goal</th>
@@ -151,6 +163,18 @@ export default function AdminDashboard() {
                     <td>
                       <div style={{ fontWeight: '600' }}>{u.username}</div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{u.email}</div>
+                    </td>
+                    <td>
+                      <span style={{ 
+                        fontSize: '0.75rem', 
+                        fontWeight: '700', 
+                        padding: '0.2rem 0.6rem', 
+                        borderRadius: '0.5rem',
+                        background: u.role === 'ADMIN' ? 'rgba(239, 68, 68, 0.1)' : (u.role === 'NUTRITIONIST' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)'),
+                        color: u.role === 'ADMIN' ? '#ef4444' : (u.role === 'NUTRITIONIST' ? '#3b82f6' : '#10b981')
+                      }}>
+                        {u.role}
+                      </span>
                     </td>
                     <td>{u.age || '-'}</td>
                     <td>{u.weight}kg / {u.height}cm</td>
@@ -165,6 +189,43 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      {/* Medication Tracking Panel */}
+      <div className="glass-panel" style={{ marginTop: '2rem' }}>
+        <h2>Medication Registry & Tracking</h2>
+        <div className="table-container">
+          {medications.length > 0 ? (
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Medication</th>
+                  <th>Dosage</th>
+                  <th>Frequency</th>
+                  <th>Purpose</th>
+                  <th>Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                {medications.map(m => (
+                  <tr key={m.id}>
+                    <td>{m.user?.username || 'Unknown'}</td>
+                    <td style={{ fontWeight: '600', color: 'var(--primary-color)' }}>{m.name}</td>
+                    <td>{m.dosage}</td>
+                    <td>{m.frequency}</td>
+                    <td>{m.purpose}</td>
+                    <td>{m.startDate} to {m.endDate || 'Present'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+              No medications currently registered for tracking.
+            </div>
+          )}
         </div>
       </div>
     </div>
