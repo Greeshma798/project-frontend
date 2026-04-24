@@ -8,6 +8,8 @@ export default function DietPlan({ user }) {
   const [view, setView] = useState('daily'); // 'daily' or 'weekly'
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showExpertPlan, setShowExpertPlan] = useState(false);
+  const [parsedExpertPlan, setParsedExpertPlan] = useState(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -23,6 +25,9 @@ export default function DietPlan({ user }) {
           setError(res.data.error);
         } else {
           setPlan(res.data);
+          if (res.data.customDietPlan) {
+            parseExpertPlan(res.data.customDietPlan);
+          }
         }
         setLoading(false);
       })
@@ -72,6 +77,32 @@ export default function DietPlan({ user }) {
       </div>
     );
   }
+
+  const parseExpertPlan = (text) => {
+    const planMatch = text.match(/PLAN:([\s\S]*)/);
+    if (!planMatch) return;
+    
+    const planText = planMatch[1];
+    const items = planText.split(';').map(i => i.trim()).filter(i => i);
+    const parsed = {};
+    
+    items.forEach(item => {
+      const [time, ...activityParts] = item.split('-');
+      const activity = activityParts.join('-').trim();
+      if (time && activity) {
+        const lowerAct = activity.toLowerCase();
+        let slot = 'Other';
+        if (lowerAct.includes('breakfast')) slot = 'Breakfast';
+        else if (lowerAct.includes('lunch')) slot = 'Lunch';
+        else if (lowerAct.includes('dinner')) slot = 'Dinner';
+        else if (lowerAct.includes('snack')) slot = 'Evening Snack';
+        else slot = time.trim();
+        
+        parsed[slot] = { suggestion: activity, time: time.trim() };
+      }
+    });
+    setParsedExpertPlan(parsed);
+  };
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.6s ease-out' }}>
@@ -157,12 +188,32 @@ export default function DietPlan({ user }) {
           </section>
 
           <section style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <h3 style={{ marginBottom: '0.5rem', fontSize: '1.5rem' }}>Suggested Daily Structure</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.5rem' }}>{showExpertPlan ? '⭐ Expert Suggested Plan' : 'Suggested Daily Structure'}</h3>
+              {parsedExpertPlan && (
+                <button 
+                  onClick={() => setShowExpertPlan(!showExpertPlan)}
+                  className="btn-secondary" 
+                  style={{ width: 'auto', background: showExpertPlan ? 'var(--primary-color)' : 'var(--secondary-color)', color: showExpertPlan ? 'white' : 'var(--text-primary)' }}
+                >
+                  {showExpertPlan ? 'Switch to Standard Plan' : '⚡ Enable Expert Plan'}
+                </button>
+              )}
+            </div>
+            
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <MealCard name="Breakfast" data={plan.meals.breakfast} icon="🥥" time="8:00 AM" />
-              <MealCard name="Lunch" data={plan.meals.lunch} icon="🍛" time="1:00 PM" />
-              <MealCard name="Evening Snack" data={plan.meals.snack} icon="☕" time="4:30 PM" />
-              <MealCard name="Dinner" data={plan.meals.dinner} icon="🥙" time="8:00 PM" />
+              {showExpertPlan && parsedExpertPlan ? (
+                Object.entries(parsedExpertPlan).map(([slot, data]) => (
+                   <MealCard key={slot} name={slot} data={data} icon="✨" time={data.time} />
+                ))
+              ) : (
+                <>
+                  <MealCard name="Breakfast" data={plan.meals.breakfast} icon="🥥" time="8:00 AM" />
+                  <MealCard name="Lunch" data={plan.meals.lunch} icon="🍛" time="1:00 PM" />
+                  <MealCard name="Evening Snack" data={plan.meals.snack} icon="☕" time="4:30 PM" />
+                  <MealCard name="Dinner" data={plan.meals.dinner} icon="🥙" time="8:00 PM" />
+                </>
+              )}
             </div>
           </section>
         </div>

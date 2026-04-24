@@ -9,6 +9,7 @@ import StatsPage from './components/StatsPage';
 import Dashboard from './components/Dashboard'; 
 import AdminDashboard from './components/AdminDashboard';
 import NutritionistDashboard from './components/NutritionistDashboard';
+import ProfessionalConsulting from './components/ProfessionalConsulting';
 import './App.css';
 import './index.css';
 
@@ -120,6 +121,7 @@ function App() {
                 <Link to="/" style={linkStyle(location.pathname === '/', 'USER')}>Food Log</Link>
                 <Link to="/plan" style={linkStyle(location.pathname === '/plan', 'USER')}>My Plan</Link>
                 <Link to="/water" style={linkStyle(location.pathname === '/water', 'USER')}>Water</Link>
+                <Link to="/consulting" style={linkStyle(location.pathname === '/consulting', 'USER')}>Expert Chat</Link>
                 <Link to="/stats" style={linkStyle(location.pathname === '/stats', 'USER')}>History</Link>
                 <Link to="/routine" style={linkStyle(location.pathname === '/routine', 'USER')}>Routine</Link>
                 <Link to="/dashboard" style={linkStyle(location.pathname === '/dashboard', 'USER')}>Profile</Link>
@@ -165,6 +167,7 @@ function App() {
             <Route path="/water" element={<WaterPage user={user} />} />
             <Route path="/stats" element={<StatsPage user={user} />} />
             <Route path="/routine" element={<RoutineBuilder user={user} />} />
+            <Route path="/consulting" element={<ProfessionalConsulting user={user} />} />
             
             <Route 
               path="/admin" 

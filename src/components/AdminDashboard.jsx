@@ -7,6 +7,7 @@ export default function AdminDashboard() {
   const [standards, setStandards] = useState([]);
   const [usersSummary, setUsersSummary] = useState([]);
   const [medications, setMedications] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
   const [newStandard, setNewStandard] = useState({
     nutrientName: '', ageRange: '', gender: 'BOTH', targetValue: '', unit: ''
   });
@@ -15,7 +16,17 @@ export default function AdminDashboard() {
     fetchStandards();
     fetchUsersHealth();
     fetchMedications();
+    fetchRecommendations();
   }, []);
+
+  const fetchRecommendations = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/recommendations/all`);
+      setRecommendations(res.data);
+    } catch (err) {
+      console.error("Error fetching recommendations", err);
+    }
+  };
 
   const fetchStandards = async () => {
     const res = await axios.get(`${API_BASE}/admin/standards`);
@@ -225,6 +236,47 @@ export default function AdminDashboard() {
             <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
               No medications currently registered for tracking.
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Expert Recommendation Log */}
+      <div className="glass-panel" style={{ marginTop: '2rem' }}>
+        <h2>Expert Recommendation Log (Global Audit)</h2>
+        <div className="table-container">
+          {recommendations.length > 0 ? (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--border-color)' }}>
+                  <th style={{ padding: '1rem' }}>User ID</th>
+                  <th style={{ padding: '1rem' }}>User Message</th>
+                  <th style={{ padding: '1rem' }}>Status</th>
+                  <th style={{ padding: '1rem' }}>Expert Response</th>
+                  <th style={{ padding: '1rem' }}>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recommendations.map(r => (
+                  <tr key={r.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <td style={{ padding: '1rem' }}>User #{r.userId}</td>
+                    <td style={{ padding: '1rem', fontStyle: 'italic', maxWidth: '300px' }}>"{r.userMessage}"</td>
+                    <td style={{ padding: '1rem' }}>
+                       <span style={{ 
+                         padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.7rem', fontWeight: 'bold',
+                         background: r.status === 'RESPONDED' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                         color: r.status === 'RESPONDED' ? '#10b981' : '#f59e0b'
+                       }}>
+                         {r.status}
+                       </span>
+                    </td>
+                    <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{r.nutritionistNote || '-'}</td>
+                    <td style={{ padding: '1rem', fontSize: '0.8rem' }}>{new Date(r.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+             <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.6 }}>No recommendations in log.</div>
           )}
         </div>
       </div>
